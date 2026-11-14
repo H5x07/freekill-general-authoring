@@ -2,7 +2,7 @@
 name: "freekill-general-authoring"
 description: "新月杀(FreeKill)自制武将拓展:把自然语言或卡面图描述落成可加载、可实测的 Lua 拓展,覆盖拆解技能规则、查本机源码样板、编写技能与翻译、处理原画语音素材、登记拓展管理并验证游戏内效果。用户要自制武将、做个技能、改原画/语音、做扩展包时使用。不用于:修改 FreeKill 本体或官方包源码;无名杀等其他三国杀引擎的拓展;只问规则不写代码的咨询;扩展包运行报错或联机故障排查。"
 metadata:
-  version: "1.0.0"
+  version: "1.1.0"
 ---
 
 # 新月杀自制武将
@@ -32,6 +32,8 @@ metadata:
 - 空城、死亡、无人参与、无结果、多目标等边界情况
 
 自然语言中的“其”“你”“其他角色”要先绑定到具体对象。若规则仍有歧义,向用户问一个最小澄清问题;不要在代码里默默选择关键规则。
+
+卡面里“获得/失去/喝掉技能”这类状态机要先问清两件事:状态用什么承载(隐藏玩家标记还是技能所有权)、状态变化要显示在哪里(详情弹窗/头像按钮/战报)。“武将牌上未获得的技能”通常做成宿主技能的相关技能(`related_skills`,开局不授予),动态显隐需要客户端钩子,见 [core-api-samples](references/core-api-samples.md)。
 
 完成标准:每个技能都有触发、成本、效果、持续时间和边界行为。
 
@@ -114,7 +116,9 @@ end) ~= nil
 
 服务端 `before_use` / `on_use` 中的 `player` 是 `ServerPlayer`,可以使用 `player.room`、`room:getOtherPlayers()`、`room:moveCardTo()` 等服务端接口。
 
-完成标准:逐个检查客户端回调和服务端回调,确认没有把 `player.room` 或 `getOtherPlayers` 放进客户端路径。
+两条时机语义容易踩:`ViewAsSkill:enabledAtPlay` 的引擎注释原文是“空闲时间点内是否可以使用转化技”——它不只管出牌阶段按钮,开局/回合外的空闲时间也走它;只许出牌阶段用的效果必须加 `player.phase == Player.Play`。`enabled_at_response(self, player, cardResponsing)` 第三参为 true 表示“打出”型询问(问闪/杀),濒死自救这类“使用”型询问是 false。
+
+完成标准:逐个检查客户端回调和服务端回调,确认没有把 `player.room` 或 `getOtherPlayers` 放进客户端路径;限出牌阶段的效果有 phase 判断。
 
 ## 8. 编写技能和翻译
 
@@ -127,6 +131,11 @@ end) ~= nil
 - 修改伤害使用 `data:changeDamage(1)`,参考【裸衣】和【陷阵】
 - 修改手牌上限使用 `addEffect("maxcards", { exclude_from = ... })`
 - 非锁定技失效复用官方 `UncompulsoryInvalidity`,不要重写全局失效技能
+- 无实体牌的视为技:`card_num = 0` + `card_filter = Util.FalseFunc` + `view_as(self, player)`,样板【穷途】;消耗写在服务端 `before_use(self, player, use)`,返回字符串会拒绝本次使用
+- 视为【酒】的限次沿用官方语义:出牌阶段增益判 `player:usedCardTimes("analeptic", Player.HistoryTurn) == 0`,濒死自救不限次也不计次(引擎置 `extraUse`)
+- 描述支持 `<br/>` 换行,卡面排版分行就在 ①② 前加;用户明确不要“觉醒技，”之类前缀时照做
+
+“未获得的技能”一律做成宿主技能的相关技能:`related_skills = { ... }` 声明,不写入 `addSkills`——开局不授予、详情弹窗以相关技能色(紫/粉)显示。相关技能的显示是骨架静态数据,要随对局状态显隐必须加客户端钩子文件(`require("packages.<包>.xxx_client")(Client or Fk.Base.ClientBase)`)劫持 `handleSetPlayerMark`/`notifyUI` 动态改 `Fk.skill_skels[宿主].related_skills`,样板见本机 `guozhou_client.lua`、`hongkainan_client.lua`;对局结束要还原,防止状态泄漏进大厅。状态本体用无 `@` 前缀的隐藏玩家标记承载(客户端可读、不显示)。
 
 翻译表必须覆盖武将名、称号、设计者/配音/画师、阵亡台词、技能名、技能描述和所有 prompt。技能名建议不超过 2 字(超过可能导致界面错位),称号建议不超过 7 字;锁定技提示不要手动加粗。
 
@@ -152,7 +161,7 @@ end) ~= nil
 6. 复查虚拟牌、实体子卡、`nullified`、`nullifiedTargets`、伤害修改和牌移动顺序
 7. 确认 `packages.db` 已登记该目录名
 8. 每个文件用真实 Lua 虚拟机做语法解析(`pip install lupa` 后对每个文件 `load()`),不要只靠肉眼读
-9. 有报错时以最新堆栈为准,读取报错行前后代码和对应官方样板;不要只修第一处表面错误。修复后 grep 全包确认没有同款误用,重新 git 提交并把新 `git rev-parse HEAD` 写回 `packages.db` 的 `hash` 列(每轮改动都要,否则拓展管理页的 hash 与仓库脱节)
+9. 有报错时以最新堆栈为准,读取报错行前后代码和对应官方样板;不要只修第一处表面错误。修复后 grep 全包确认没有同款误用,重新 git 提交并把新 `git rev-parse HEAD` 写回 `packages.db` 的 `hash` 列(每轮改动都要,否则拓展管理页的 hash 与仓库脱节)。注意:在拓展管理里禁用/启用一个包,管理器会按它记录的 hash 把包目录 `git checkout` 还原——管理器持旧 hash(或启动时缓存的旧值)会直接冲掉磁盘上的新文件;提交对象不会丢,`git reflog` 找到提交后 `git reset --hard <hash>` 恢复,再把正确 hash 写回 `packages.db`
 
 没有 Lua 解释器可用时(lupa 装不上),明确说未做语法解析;不能声称已经通过运行测试。
 
@@ -171,5 +180,6 @@ end) ~= nil
 - 空城、死亡、无人参与、多目标、无结果和轮次边界不报错
 - 视为使用/打出时牌移动位置正确
 - 牌名次数限制、伤害增幅、无效和非锁定技失效的持续时间正确
+- 有“未获得技能”动态显隐时,开玩家详情弹窗确认喝掉/回归时紫色条目的消失与恢复;出牌阶段以外(开局、回合外空闲)技能按钮不可点
 
 完成标准:只在用户实际回报游戏内通过后,才称为“已生效”;否则称为“文件已写入/静态验收通过”。
