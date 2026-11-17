@@ -60,6 +60,6 @@
 
 - 声明：`fk.CreateSkill{ related_skills = { "xxx" } }`（skeleton 字段，注释原文“如〖志继〗的〖观星〗”）。开局授予走 `getSkillNameList(true)`（**不含** related，`gamelogic.lua` 的 `attachSkillToPlayers`），所以相关技能开局天然“未获得”
 - 详情显示：对局内玩家详情弹窗 `LunarLtk\Pages\InfoPopups\PlayerDetail.qml` 读 `Ltk.getPlayerSkills(id)`（`client\util.lua:402`）= 运行时已拥有技能 + **每个已拥有技能骨架的 `related_skills`**（相关色渲染，`skillNames.includes` 去重）；大厅武将详情 `GeneralDetailPage.qml` / `getGeneralDetail(general)` 读静态 `general.all_skills` + 骨架 related。**两处都是骨架静态数据，授予／移除技能不会让相关条目消失**
-- 动态显隐：客户端钩子文件 `require("packages.<包>.xxx_client")(Client or Fk.Base.ClientBase)`，劫持 `base.handleSetPlayerMark`（标记同步全走这里，含无 `@` 标记）按状态改 `Fk.skill_skels[宿主].related_skills`，并在 `base.notifyUI` 里拦 `GameOver` / `PropertyUpdate(general)` 还原，防止状态泄漏进大厅。本机样板：`haoo_generals\guozhou_client.lua`（模式出处）、`haoo_generals\hongkainan_client.lua`（按标记增删 related_skills）
+- 动态显隐：客户端钩子文件 `require("packages.<包>.xxx_client")(Client or Fk.Base.ClientBase)`，劫持 `base.handleSetPlayerMark`（标记同步全走这里，含无 `@` 标记）按状态改 `Fk.skill_skels[宿主].related_skills`，并在 `base.notifyUI` 里拦 `GameOver` / `PropertyUpdate(general)` 还原，防止状态泄漏进大厅。样板在你本机 `packages` 下搜 `handleSetPlayerMark` 就能找到实际写法
 - 状态承载：无 `@` 前缀玩家标记不显示在头像区但同步到客户端、客户端回调可读（`ol\pkg\ol_ex\skills\jijiang.lua` 读 `jijiang_failed-phase`）；`@` 前缀标记才会显示。`-turn` / `-phase` / `-round` 后缀标记自动在回合／阶段／轮次结束清除（`mark_enum.lua` 的 `MarkEnum.TempMarkSuffix`，样板 `tuqi.lua`）
 - `room:handleAddLoseSkills(player, "skill|-skill", source, sendlog, no_trigger)`（`server\events\skill.lua:206`）：幂等、广播 AddSkill／LoseSkill、发战报，授予／移除真实技能用它；但详情弹窗不反映运行时授予

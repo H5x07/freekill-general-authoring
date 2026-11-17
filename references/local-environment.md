@@ -1,39 +1,51 @@
 # 本机环境
 
-回链：[SKILL.md 开始前](../SKILL.md)。这张表记录作者本机上次确认的状态，**其他使用者请按自己的环境替换**；实际以各安装目录下的 `fk_ver` 实测为准。
+回链：[SKILL.md 开始前](../SKILL.md)。这份文件是模板：第一次使用本 Skill 时，把你的环境填进去；填不出来就在对话里问用户，不要猜。
 
-## 已知安装
+## 需要填写
 
-- `D:\FreeKill-v0.5.25\FreeKill-release`，版本 0.5.25，当前工作版本
-- `E:\FreeKill-v0.5.20\FreeKill-release`，版本 0.5.20，旧版，不要混写
+| 项 | 填什么 | 怎么确认 |
+| --- | --- | --- |
+| FreeKill 根目录 | 装着游戏的目录，里面有 `fk_ver` 和 `packages` | 列目录，读 `fk_ver` |
+| 当前工作版本 | 上面读到的版本号 | 和用户确认改哪一份 |
+| 旧版安装 | 其他安装目录，标清不要混写 | 同上 |
+| 游戏内测试入口 | 在根目录启动游戏并带 `--testskills <技能名>` 的写法 | 根目录的可执行文件名 |
+| Python | 能跑 `scripts/check_package.py` 的 3.10+ | `py -3 --version` 或 `python3 --version` |
+| Node + luaparse | 只在需要 Lua 语法解析时准备 | `node -v`，`npm i luaparse --no-save` |
 
-只改用户指定的版本。根目录不明确就先问，不要把文件写进另一份安装。
+有多份安装时，在表里写清哪份是当前工作版本、哪份是旧版。只改用户指定的那一份。
 
-## 可用的工具
+## 项目现状
 
-- 搜索：本机无 `rg`；`Get-ChildItem -Recurse | Select-String` 扫整个 `packages` 会长时间挂起，改用 `findstr`
-  - 先 `Set-Location "<root>"` 再 `cmd /c "findstr /s /m /c:关键词 lua\*.lua"`；pwsh 里 `cd /d` 会报错
-  - `findstr` 无匹配退出码为 1，`Command exited with code 1` 是“没搜到”不是命令失败
-  - 限制到具体子目录，全库扫描也可能挂起
-  - 按扩展名筛文件时 `-Include` 要求路径以 `\*` 结尾，否则**静默返回空**；空输出不能当“没搜到”下结论
-- SQLite：本机没有 `sqlite3` 命令行，操作 `packages.db` 用 Python 的 `sqlite3` 模块
-- Lua 解释器：本机没有独立的 `lua` / `luajit` / `luac`，语法检查用 Node 的 `luaparse`，见 [SKILL.md §10](../SKILL.md)
-- Python：`$env:LOCALAPPDATA\Programs\Python\Python314\python.exe`（先 `Test-Path` 验证，找不到就停下问用户）。本 Skill 的 `scripts/check_package.py` 只需要 Python 3.10+ 标准库
-- 游戏内测试：`& '.\FreeKill.exe' --testskills <skill_name>`，需要可用的游戏安装
+按当前项目填写，不要套用别人的：
 
-## 写入与看图
+- 哪些包已经启用、彼此有没有注册同一个武将代码名或技能名
+- 新武将应该写进哪个包
+- 势力、角标这套内部 id 该沿用哪个值
 
-- `apply_patch` 写不了 `D:\FreeKill...`（报 `Path escapes sandbox root`），改用 `edit` 或 `write`
-- `edit` 的 `oldText` 必须全文唯一，多处重复要带上下文，唯一性失败时改用 `write` 整文件重写
-- 看图工具只读工作区目录：要看包内原画，先复制到工作区再读
+同一代码名出现在两个启用的包里会让 `loadPackages()` 直接中断，新武将进不了游戏。写入前先查重。
 
-## 本机包的现状
+## 平台备忘
 
-- `ts` 与 `haoo_generals` 内容重叠（都注册 `ts__yuji`、`ts__jiekang` 与同名技能），`ts` 必须保持 `enabled=0`
-- 新武将写进已在用的 `haoo_generals`，势力的内部 id 沿用该包已有的值，不要再造同义 id
-- 不要靠改代码名或把重复包一起打开来绕开重名
+下面几条是 Windows + PowerShell 上踩过的；其他平台换成等价工具，规则不变。
+
+- 搜索：没有 `rg` 时用 `findstr`，先 `Set-Location <目录>` 再 `cmd /c "findstr /s /m /c:关键词 *.lua"`。`/s` 递归、`/m` 只列文件名、`/n` 带行号；限制到具体子目录，全库扫描可能挂起
+- `Get-ChildItem -Recurse | Select-String` 扫大目录会长时间不返回，别用来做全库搜索
+- `Get-ChildItem -Include *.lua -Path <目录>` **静默返回空**（路径要以 `\*` 结尾），空输出不能当“没搜到”下结论
+- `findstr` 无匹配的退出码是 1，`Command exited with code 1` 是“没搜到”，不是命令失败
+- PowerShell 里 `cd /d` 会报错，先 `Set-Location` 再调 `cmd`
+- 没有 `sqlite3` 命令行时，用 Python 的 `sqlite3` 模块读写 `packages.db`
+- 没有 `lua` / `luac` 时，用 luaparse 做语法解析，参数见 [SKILL.md 第 9 步](../SKILL.md)
+- 控制台按本地代码页输出时中文会变乱码；脚本里固定 UTF-8 输出，读管道前也统一成 UTF-8
+
+## 工具限制
+
+- 写文件的工具可能有沙箱目录限制，写不进目标盘时改用整文件写入或换工具
+- 精确替换类工具要求原文唯一，多处重复要带上下文，唯一性失败时整文件重写
+- 看图工具可能只读工作区目录，要看包内原画先复制过去
 
 ## 协作约定
 
-- 代码实现默认派给隔离执行者：任务里写死目标文件绝对路径、已拍板的规则口径（歧义先问清，最多三题）、必须自查的本机 API，以及“不要 git commit、不要动 packages.db”。子代理只交报告，回来后自己 `git diff` 逐行看，把结论落到源码 file:line
+- 代码实现默认派给隔离执行者：任务里写死目标文件绝对路径、已拍板的规则口径、必须自查的本机 API，以及“不要 git commit、不要动 packages.db”
+- 子代理只交报告，回来后自己 `git diff` 逐行看，把每条结论落到源码 file:line
 - “子代理说已通过”不算验收

@@ -168,7 +168,7 @@ end
 
 “未获得的技能”一律做成宿主技能的相关技能：`related_skills = { ... }` 声明，不写入 `addSkills`。开局不授予，详情弹窗以相关技能色（紫／粉）显示。
 
-相关技能的显示是骨架静态数据（`PlayerDetail.qml` 读 `Ltk.getPlayerSkills`、大厅读 `general.all_skills`），授予／移除技能不会让条目增减。要随对局状态显隐，必须加客户端钩子文件：`require("packages.<包>.xxx_client")(Client or Fk.Base.ClientBase)`，劫持 `handleSetPlayerMark` / `notifyUI` 动态改 `Fk.skill_skels[宿主].related_skills`；对局结束要还原，防止状态泄漏进大厅。样板见本机 `guozhou_client.lua`、`hongkainan_client.lua`。
+相关技能的显示是骨架静态数据（`PlayerDetail.qml` 读 `Ltk.getPlayerSkills`、大厅读 `general.all_skills`），授予／移除技能不会让条目增减。要随对局状态显隐，必须加客户端钩子文件：`require("packages.<包>.xxx_client")(Client or Fk.Base.ClientBase)`，劫持 `handleSetPlayerMark` / `notifyUI` 动态改 `Fk.skill_skels[宿主].related_skills`；对局结束要还原，防止状态泄漏进大厅。样板在你本机 `packages` 下搜 `handleSetPlayerMark` 就能找到。
 
 状态本体用无 `@` 前缀的隐藏玩家标记承载（客户端可读、不显示）。引擎细节见 [API 与样板](core-api-samples.md)。
 

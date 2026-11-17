@@ -11,7 +11,7 @@ metadata:
 
 ## 开始前
 
-先读 [本机环境](references/local-environment.md)：安装路径、可用工具和协作约定。那里的内容可能过时，实际以 `fk_ver` 实测为准；换机器时按自己的环境改写它。
+先看 [本机环境](references/local-environment.md)。它是一份模板：还没填就先把 FreeKill 根目录、当前工作版本和测试入口填进去，填不出来就问用户。
 
 按需要读的参考资料：
 

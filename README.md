@@ -43,7 +43,7 @@ npx skills add Haoo-7/freekill-general-authoring
 
 没有 API Key、没有账号、不需要联网。
 
-只有一处需要按机器改：`references/local-environment.md` 记录的是作者本机的安装路径（例如 FreeKill 根目录、Python 路径）和工具情况。换机器时把它改成自己的环境，或直接在对话里告诉 Agent 你的 FreeKill 根目录。
+只有一处需要按机器填：`references/local-environment.md` 是一份模板，写下你的 FreeKill 根目录、当前工作版本、游戏内测试入口和本机工具情况。可以让 Agent 直接读 `fk_ver` 填，也可以口头告诉它根目录。
 
 静态验收脚本只需要 Python 3.10+ 标准库：
 
@@ -64,7 +64,7 @@ references/skill-mechanics.md       # 技能形态与坑：钩子粒度、失效
 references/viewas-and-areas.md      # 视为技、从隐藏区用牌、区域废除
 references/text-and-assets.md       # 翻译键、文案规则、原画与语音
 references/troubleshooting.md       # 改了没生效时的排查顺序
-references/local-environment.md     # 作者本机安装与工具情况（换机器需改写）
+references/local-environment.md     # 本机环境模板（首次使用需填写）
 scripts/check_package.py            # 静态验收：结构、编码、翻译键、db hash
 tests/test_check_package.py         # 脚本的回归测试
 ```
